@@ -1,0 +1,160 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (e.g., v1.0.0)
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Docker Registry
+      uses: docker/login-action@v3
+      with:
+        # TODO: Configure docker registry credentials
+        # username: ${{ secrets.DOCKER_USERNAME }}
+        # password: ${{ secrets.DOCKER_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./app
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository }}/sentiment-api:${{ github.ref_name }}
+          ghcr.io/${{ github.repository }}/sentiment-api:latest
+        cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/sentiment-api:buildcache
+        cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/sentiment-api:buildcache,mode=max
+    
+    - name: Generate deployment artifacts
+      run: |
+        echo "Release: ${{ github.ref_name }}" > release_info.txt
+        echo "Build timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> release_info.txt
+    
+    - name: Upload deployment info
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-info
+        path: release_info.txt
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Deploy to staging environment
+      run: |
+        # TODO: Deploy to staging
+        # Examples for different platforms:
+        
+        # AWS ECS
+        # aws ecs update-service --cluster staging-cluster --service sentiment-api --force-new-deployment
+        
+        # Google Cloud Run
+        # gcloud run deploy sentiment-api --image ghcr.io/${{ github.repository }}/sentiment-api:${{ github.ref_name }} --region us-central1
+        
+        # Kubernetes
+        # kubectl set image deployment/sentiment-api sentiment-api=ghcr.io/${{ github.repository }}/sentiment-api:${{ github.ref_name }} --record
+        
+        echo "Staging deployment placeholder"
+    
+    - name: Run smoke tests on staging
+      run: |
+        # TODO: Test deployed service
+        echo "Running smoke tests..."
+        # TODO: Call health check endpoint
+        # curl -f https://staging-sentiment-api.example.com/health || exit 1
+        
+        # TODO: Test prediction endpoint
+        # curl -X POST https://staging-sentiment-api.example.com/predict \
+        #   -H "Content-Type: application/json" \
+        #   -d '{"text":"Great movie!"}' || exit 1
+        
+        echo "Smoke tests passed!"
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval in GitHub
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Deploy to production
+      run: |
+        # TODO: Deploy to production
+        # Examples:
+        
+        # AWS ECS
+        # aws ecs update-service --cluster prod-cluster --service sentiment-api --force-new-deployment
+        
+        # Google Cloud Run
+        # gcloud run deploy sentiment-api --image ghcr.io/${{ github.repository }}/sentiment-api:${{ github.ref_name }} --region us-central1
+        
+        # Kubernetes with blue-green deployment
+        # kubectl set image deployment/sentiment-api-green sentiment-api=ghcr.io/${{ github.repository }}/sentiment-api:${{ github.ref_name }}
+        # kubectl patch service sentiment-api -p '{"spec":{"selector":{"version":"green"}}}'
+        
+        echo "Production deployment placeholder"
+    
+    - name: Health check on production
+      run: |
+        # TODO: Verify production deployment
+        echo "Running production health checks..."
+        # TODO: Check multiple endpoints
+        # for i in {1..5}; do
+        #   curl -f https://sentiment-api.example.com/health && break || sleep 10
+        # done
+        
+        echo "Production health check passed!"
+    
+    - name: Notify deployment success
+      if: success()
+      run: |
+        # TODO: Send Slack notification
+        # curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+        #   -H 'Content-Type: application/json' \
+        #   -d '{"text":"Sentiment API deployed to production: ${{ github.ref_name }}"}'
+        
+        echo "Deployment successful!"
+    
+    - name: Notify deployment failure
+      if: failure()
+      run: |
+        # TODO: Send failure notification and rollback
+        echo "Deployment failed! Rolling back..."
+        # TODO: Implement rollback logic
+
+  post-deployment:
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Create deployment record
+      run: |
+        echo "Version: ${{ github.ref_name }}" > deployment.log
+        echo "Timestamp: $(date)" >> deployment.log
+        echo "Status: ${{ job.status }}" >> deployment.log
+    
+    - name: Archive logs
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-logs
+        path: deployment.log

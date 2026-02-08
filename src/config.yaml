@@ -1,0 +1,46 @@
+# Configuration file for the ML pipeline.
+# This file contains default configuration values for the data processing,
+# model training, and evaluation pipelines.
+
+# Data Configuration
+data:
+  dataset_path: "data/raw/reviews.csv"
+  test_size: 0.2
+  random_state: 42
+  sample_size: null  # Use null for full dataset
+
+# Training Configuration
+training:
+  model_name: "distilbert-base-uncased"
+  num_labels: 2
+  max_length: 128
+  batch_size: 32
+  epochs: 3
+  learning_rate: 0.00002
+  warmup_steps: 500
+  weight_decay: 0.01
+  seed: 42
+
+# Evaluation Configuration
+evaluation:
+  threshold: 0.5
+  compute_roc_auc: true
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+  workers: 4
+  timeout: 120
+
+# MLflow Configuration
+mlflow:
+  experiment_name: "sentiment-analysis"
+  tracking_uri: null  # Set to your MLflow server URI
+  artifact_location: "./mlruns"
+
+# DVC Configuration
+dvc:
+  remote_name: "myremote"
+  remote_url: null  # Set to your S3/GCS bucket

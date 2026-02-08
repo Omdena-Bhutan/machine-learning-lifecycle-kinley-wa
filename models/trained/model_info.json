@@ -1,0 +1,8 @@
+{
+  "model_type": "RandomForest",
+  "accuracy": 1.0,
+  "f1_score": 1.0,
+  "timestamp": "2026-02-07T22:59:56.731420",
+  "training_samples": 400,
+  "test_samples": 100
+}

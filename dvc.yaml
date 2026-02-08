@@ -1,0 +1,38 @@
+stages:
+  prepare:
+    cmd: python src/data_loader.py
+    deps:
+      - data/raw/reviews.csv
+      - src/data_loader.py
+    outs:
+      - data/processed/train.pkl
+      - data/processed/test.pkl
+
+  train:
+    cmd: python src/model.py
+    deps:
+      - data/processed/train.pkl
+      - src/model.py
+      - src/config.yaml
+    params:
+      - train.model_name
+      - train.batch_size
+      - train.epochs
+      - train.learning_rate
+      - train.max_length
+    outs:
+      - models/trained/model.pkl:
+          cache: false
+    metrics:
+      - metrics.json:
+          cache: false
+
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+      - models/trained/model.pkl
+      - data/processed/test.pkl
+      - src/evaluate.py
+    metrics:
+      - eval_metrics.json:
+          cache: false
