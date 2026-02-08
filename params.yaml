@@ -1,0 +1,19 @@
+train:
+  model_name: "distilbert-base-uncased"
+  batch_size: 32
+  epochs: 3
+  learning_rate: 2e-5
+  max_length: 128
+  validation_split: 0.2
+  gradient_accumulation_steps: 1
+  warmup_steps: 500
+  weight_decay: 0.01
+
+data:
+  dataset_path: "data/raw/reviews.csv"
+  test_size: 0.2
+  random_state: 42
+  sample_size: null  # Set to number to use subset, null for full dataset
+
+evaluate:
+  threshold: 0.5
